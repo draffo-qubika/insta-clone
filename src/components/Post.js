@@ -46,14 +46,14 @@ export default function Post({
       setUseProxy(false);
       setTimeout(() => setUseProxy(true), 100);
     } else {
-      console.log(`❌ All proxy attempts failed for post ${id}, using Lakers game fallback`);
-      // Use Lakers game image as fallback
-      const fallbackImageUrl = "https://images.unsplash.com/photo-1574623452334-1e0ac2b3ccb4?w=600&h=600&fit=crop"; // Lakers/Basketball game image
+      console.log(`❌ All proxy attempts failed for post ${id}, using default fallback image`);
+      // Use custom default image as fallback
+      const fallbackImageUrl = "/default-image.png"; // Custom image from public directory
       
       if (e.target.src !== fallbackImageUrl) {
-        console.log(`🏀 Using Lakers game fallback image for post ${id}`);
+        console.log(`🖼️ Using custom default fallback image for post ${id}`);
         e.target.src = fallbackImageUrl;
-        e.target.alt = "Lakers vs Clippers - Tonight's Game";
+        e.target.alt = "Default Image";
         setImageError(false);
       } else {
         console.log(`❌ Even fallback image failed for post ${id}`);
