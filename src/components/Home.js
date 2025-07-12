@@ -103,7 +103,7 @@ const Home = () => {
       
       try {
         const apiUrl = process.env.REACT_APP_API_URL || 'http://34.230.1.222:8080';
-        const endpoint = `${apiUrl}/posts`;
+        const endpoint = `${apiUrl.replace(/\/$/, '')}/posts`;
         
         console.log('🚀 Fetching from:', endpoint);
         
