@@ -104,11 +104,26 @@ function App() {
         setLoading(true);
         setError(null);
         
-        // Use relative URL to leverage the proxy configuration
-        const apiUrl = '/posts';
-        console.log('🔄 Fetching posts from:', apiUrl);
+        // Use the API URL from environment variables
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://34.230.1.222:8080';
         
-        const response = await axios.get(apiUrl);
+        // Try direct API call first, fallback to CORS proxy if needed
+        let endpoint = `${apiUrl}/posts`;
+        console.log('🔄 Fetching posts from:', endpoint);
+        
+        let response;
+        try {
+          response = await axios.get(endpoint);
+        } catch (corsError) {
+          console.log('⚠️ CORS error detected, trying with proxy...', corsError.message);
+          // Fallback to CORS proxy
+          endpoint = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl + '/posts')}`;
+          console.log('🔄 Fetching with CORS proxy from:', endpoint);
+          response = await axios.get(endpoint);
+          // Parse the proxied response
+          response.data = JSON.parse(response.data.contents);
+        }
+        
         console.log('✅ API Response:', response.data);
         
         // Handle the actual API response structure
@@ -119,7 +134,7 @@ function App() {
           id: post.id,
           username: post.username || "user_" + post.id,
           userAvatar: post.userAvatar || post.user_avatar || "https://images.unsplash.com/photo-1494790108755-2616c413b265?w=40&h=40&fit=crop&crop=face",
-          imageUrl: post.imageUrl || post.image_url || post.image,
+          imageUrl: post.imageUrl || post.image_url || post.image || "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&h=600&fit=crop",
           caption: post.caption || post.copy || "",
           likes: post.likes || Math.floor(Math.random() * 1000),
           timePosted: post.timePosted || formatTimeAgo(post.created_at),
