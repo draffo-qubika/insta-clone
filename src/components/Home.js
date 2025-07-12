@@ -108,23 +108,18 @@ const Home = () => {
         console.log('🚀 Fetching from:', endpoint);
         
         let response;
-        // PROXY DISABLED - Only direct API call
-        response = await axios.get(endpoint);
-        console.log('✅ Direct API call successful');
-        
-        // // PROXY LOGIC COMMENTED OUT
-        // try {
-        //   // Try direct API call first
-        //   response = await axios.get(endpoint);
-        //   console.log('✅ Direct API call successful');
-        // } catch (corsError) {
-        //   console.log('⚠️ CORS error, trying proxy...');
-        //   // Fallback to CORS proxy
-        //   const proxyEndpoint = `https://api.allorigins.win/get?url=${encodeURIComponent(endpoint)}`;
-        //   response = await axios.get(proxyEndpoint);
-        //   response.data = JSON.parse(response.data.contents);
-        //   console.log('✅ Proxy API call successful');
-        // }
+        try {
+          // Try direct API call first
+          response = await axios.get(endpoint);
+          console.log('✅ Direct API call successful');
+        } catch (corsError) {
+          console.log('⚠️ CORS error, trying proxy...');
+          // Fallback to CORS proxy
+          const proxyEndpoint = `https://api.allorigins.win/get?url=${encodeURIComponent(endpoint)}`;
+          response = await axios.get(proxyEndpoint);
+          response.data = JSON.parse(response.data.contents);
+          console.log('✅ Proxy API call successful');
+        }
         
         if (isMounted) {
           const apiPosts = response.data.posts || [];

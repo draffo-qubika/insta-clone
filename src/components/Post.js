@@ -18,9 +18,8 @@ export default function Post({
   const [likesCount, setLikesCount] = useState(likes);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
-  // // PROXY STATE VARIABLES COMMENTED OUT
-  // const [useProxy, setUseProxy] = useState(false);
-  // const [proxyAttempts, setProxyAttempts] = useState(0);
+  const [useProxy, setUseProxy] = useState(false);
+  const [proxyAttempts, setProxyAttempts] = useState(0);
 
   const handleLike = () => {
     setIsLiked(!isLiked);
@@ -33,38 +32,35 @@ export default function Post({
 
   const handleImageError = (e) => {
     console.error(`❌ Image failed to load for post ${id}:`, e.target.src);
-    // Use Lakers game image as fallback
-    const fallbackImageUrl = "https://images.unsplash.com/photo-1574623452334-1e0ac2b3ccb4?w=600&h=600&fit=crop"; // Lakers/Basketball game image
     
-    if (e.target.src !== fallbackImageUrl) {
-      console.log(`🏀 Using Lakers game fallback image for post ${id}`);
-      e.target.src = fallbackImageUrl;
-      e.target.alt = "Lakers vs Clippers - Tonight's Game";
+    if (!useProxy && imageUrl) {
+      console.log(`🔄 Trying proxy for post ${id}`);
+      setUseProxy(true);
+      setProxyAttempts(1);
       setImageError(false);
+    } else if (useProxy && proxyAttempts < 2) {
+      console.log(`🔄 Trying backup proxy for post ${id} (attempt ${proxyAttempts + 1})`);
+      setProxyAttempts(proxyAttempts + 1);
+      setImageError(false);
+      // Force re-render by toggling useProxy
+      setUseProxy(false);
+      setTimeout(() => setUseProxy(true), 100);
     } else {
-      console.log(`❌ Even fallback image failed for post ${id}`);
-      setImageError(true);
-      setImageLoaded(true);
+      console.log(`❌ All proxy attempts failed for post ${id}, using Lakers game fallback`);
+      // Use Lakers game image as fallback
+      const fallbackImageUrl = "https://images.unsplash.com/photo-1574623452334-1e0ac2b3ccb4?w=600&h=600&fit=crop"; // Lakers/Basketball game image
+      
+      if (e.target.src !== fallbackImageUrl) {
+        console.log(`🏀 Using Lakers game fallback image for post ${id}`);
+        e.target.src = fallbackImageUrl;
+        e.target.alt = "Lakers vs Clippers - Tonight's Game";
+        setImageError(false);
+      } else {
+        console.log(`❌ Even fallback image failed for post ${id}`);
+        setImageError(true);
+        setImageLoaded(true);
+      }
     }
-    
-    // // PROXY LOGIC COMMENTED OUT
-    // if (!useProxy && imageUrl) {
-    //   console.log(`🔄 Trying proxy for post ${id}`);
-    //   setUseProxy(true);
-    //   setProxyAttempts(1);
-    //   setImageError(false);
-    // } else if (useProxy && proxyAttempts < 2) {
-    //   console.log(`🔄 Trying backup proxy for post ${id} (attempt ${proxyAttempts + 1})`);
-    //   setProxyAttempts(proxyAttempts + 1);
-    //   setImageError(false);
-    //   // Force re-render by toggling useProxy
-    //   setUseProxy(false);
-    //   setTimeout(() => setUseProxy(true), 100);
-    // } else {
-    //   console.log(`❌ All proxy attempts failed for post ${id}`);
-    //   setImageError(true);
-    //   setImageLoaded(true);
-    // }
   };
 
   const handleImageLoad = () => {
@@ -83,32 +79,29 @@ export default function Post({
   const getImageSrc = () => {
     if (!hasValidImage) return null;
     
-    // PROXY DISABLED - Always use direct URL
-    return imageUrl;
+    // Check if we're in production (HTTPS) or development (HTTP)
+    const isProduction = window.location.protocol === 'https:';
     
-    // // Check if we're in production (HTTPS) or development (HTTP)
-    // const isProduction = window.location.protocol === 'https:';
-    
-    // if (isProduction || useProxy) {
-    //   // Always use proxy in production to avoid Mixed Content errors
-    //   // Also use proxy if direct URL failed in development
-    //   if (useProxy) {
-    //     // Try different proxy services based on attempt count
-    //     switch (proxyAttempts) {
-    //       case 1:
-    //         return `https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`;
-    //       case 2:
-    //         return `https://corsproxy.io/?${encodeURIComponent(imageUrl)}`;
-    //       default:
-    //         return `https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`;
-    //     }
-    //   } else {
-    //     return `https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`;
-    //   }
-    // } else {
-    //   // Try direct URL first in development only
-    //   return imageUrl;
-    // }
+    if (isProduction || useProxy) {
+      // Always use proxy in production to avoid Mixed Content errors
+      // Also use proxy if direct URL failed in development
+      if (useProxy) {
+        // Try different proxy services based on attempt count
+        switch (proxyAttempts) {
+          case 1:
+            return `https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`;
+          case 2:
+            return `https://corsproxy.io/?${encodeURIComponent(imageUrl)}`;
+          default:
+            return `https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`;
+        }
+      } else {
+        return `https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`;
+      }
+    } else {
+      // Try direct URL first in development only
+      return imageUrl;
+    }
   };
 
   const imageSrc = getImageSrc();
@@ -117,11 +110,10 @@ export default function Post({
   if (hasValidImage) {
     console.log(`🔍 Post ${id} - imageUrl:`, imageUrl);
     console.log(`🔍 Post ${id} - imageSrc:`, imageSrc);
-    // // PROXY DEBUG LOGS COMMENTED OUT
-    // const isProduction = window.location.protocol === 'https:';
-    // console.log(`🔍 Post ${id} - isProduction:`, isProduction);
-    // console.log(`🔍 Post ${id} - useProxy:`, useProxy);
-    // console.log(`🔍 Post ${id} - proxyAttempts:`, proxyAttempts);
+    const isProduction = window.location.protocol === 'https:';
+    console.log(`🔍 Post ${id} - isProduction:`, isProduction);
+    console.log(`🔍 Post ${id} - useProxy:`, useProxy);
+    console.log(`🔍 Post ${id} - proxyAttempts:`, proxyAttempts);
   }
 
   return (
@@ -158,7 +150,7 @@ export default function Post({
             </div>
           )}
           <img 
-            key={`${id}`} // Simple key since proxy is disabled
+            key={`${id}-${useProxy}-${proxyAttempts}`} // Include proxy state in key to force re-render
             src={imageSrc} 
             alt="Post" 
             className="post-image"
