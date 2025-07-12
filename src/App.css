@@ -346,12 +346,35 @@ body {
   border-radius: 8px;
   overflow: hidden;
   margin-bottom: 16px;
+  background-color: #1a1a1a;
+  min-height: 400px;
 }
 
 .post-image {
   width: 100%;
   height: auto;
   display: block;
+}
+
+/* Image Loading Placeholder */
+.image-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+}
+
+.loading-placeholder {
+  color: #a8a8a8;
+  font-size: 14px;
+  padding: 20px;
+  text-align: center;
 }
 
 /* Post Actions */
@@ -545,5 +568,43 @@ body {
   .post {
     border-radius: 0;
     margin-bottom: 16px;
+  }
+}
+
+/* Router Link styling */
+a.nav-item {
+  text-decoration: none;
+  color: inherit;
+}
+
+a.nav-item:hover {
+  text-decoration: none;
+  color: inherit;
+}
+
+a.nav-item:visited {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Prompt Page Layout */
+.prompt-page {
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+  min-height: 100vh;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Responsive for prompt page */
+@media (max-width: 768px) {
+  .prompt-page {
+    margin-left: 0;
+    width: 100%;
+    padding: 10px;
   }
 }

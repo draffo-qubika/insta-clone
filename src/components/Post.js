@@ -1,6 +1,20 @@
 // src/components/Post.js
 import React, { useState } from 'react';
 
+// Demo images for when API images fail or are null
+const DEMO_IMAGES = [
+  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=600&fit=crop", // Mountain landscape
+  "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=600&h=600&fit=crop", // Food
+  "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=600&h=600&fit=crop", // Beach
+  "https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?w=600&h=600&fit=crop", // Coffee
+  "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=600&h=600&fit=crop", // Ocean
+  "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=600&fit=crop", // Office/workspace
+  "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&h=600&fit=crop", // City
+  "https://images.unsplash.com/photo-1574085733277-851d9d856a3a?w=600&h=600&fit=crop", // Technology
+  "https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=600&h=600&fit=crop", // Programming
+  "https://images.unsplash.com/photo-1493612276216-ee3925520721?w=600&h=600&fit=crop"  // Art/creative
+];
+
 export default function Post({ 
   id, 
   username, 
@@ -16,6 +30,8 @@ export default function Post({
   const [isLiked, setIsLiked] = useState(initialLiked);
   const [isBookmarked, setIsBookmarked] = useState(initialBookmarked);
   const [likesCount, setLikesCount] = useState(likes);
+  const [currentImageUrl, setCurrentImageUrl] = useState(imageUrl);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const handleLike = () => {
     setIsLiked(!isLiked);
@@ -26,12 +42,37 @@ export default function Post({
     setIsBookmarked(!isBookmarked);
   };
 
+  const handleImageError = () => {
+    // Use a demo image based on the post ID for consistency
+    const fallbackImage = DEMO_IMAGES[id % DEMO_IMAGES.length];
+    setCurrentImageUrl(fallbackImage);
+  };
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
+  // Get a demo image if imageUrl is null/undefined
+  const getImageUrl = () => {
+    if (!imageUrl || imageUrl === 'null' || imageUrl === null) {
+      return DEMO_IMAGES[id % DEMO_IMAGES.length];
+    }
+    return currentImageUrl || imageUrl;
+  };
+
   return (
     <div className="post">
       {/* Post Header */}
       <div className="post-header">
         <div className="post-header-left">
-          <img src={userAvatar} alt={username} className="post-avatar" />
+          <img 
+            src={userAvatar} 
+            alt={username} 
+            className="post-avatar"
+            onError={(e) => {
+              e.target.src = "https://images.unsplash.com/photo-1494790108755-2616c413b265?w=40&h=40&fit=crop&crop=face";
+            }}
+          />
           <span className="post-username">{username}</span>
           <span className="post-time">• {timePosted}</span>
         </div>
@@ -46,7 +87,19 @@ export default function Post({
 
       {/* Post Image */}
       <div className="post-image-wrapper">
-        <img src={imageUrl} alt="Post" className="post-image" />
+        {!imageLoaded && (
+          <div className="image-loading">
+            <div className="loading-placeholder">Loading image...</div>
+          </div>
+        )}
+        <img 
+          src={getImageUrl()} 
+          alt="Post" 
+          className="post-image"
+          onError={handleImageError}
+          onLoad={handleImageLoad}
+          style={{ display: imageLoaded ? 'block' : 'none' }}
+        />
       </div>
 
       {/* Post Actions */}
