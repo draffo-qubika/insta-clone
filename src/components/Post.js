@@ -18,6 +18,7 @@ export default function Post({
   const [likesCount, setLikesCount] = useState(likes);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [useProxy, setUseProxy] = useState(false);
 
   const handleLike = () => {
     setIsLiked(!isLiked);
@@ -28,12 +29,20 @@ export default function Post({
     setIsBookmarked(!isBookmarked);
   };
 
-  const handleImageError = () => {
-    setImageError(true);
-    setImageLoaded(true);
+  const handleImageError = (e) => {
+    console.error(`❌ Image failed to load for post ${id}:`, e.target.src);
+    if (!useProxy && imageUrl) {
+      console.log(`🔄 Trying proxy for post ${id}`);
+      setUseProxy(true);
+      setImageError(false);
+    } else {
+      setImageError(true);
+      setImageLoaded(true);
+    }
   };
 
   const handleImageLoad = () => {
+    console.log(`✅ Image loaded successfully for post ${id}`);
     setImageLoaded(true);
   };
 
@@ -43,6 +52,34 @@ export default function Post({
                        imageUrl !== null && 
                        imageUrl.trim() !== '' &&
                        !imageError;
+
+  // Get the image URL to use
+  const getImageSrc = () => {
+    if (!hasValidImage) return null;
+    
+    // Check if we're in production (HTTPS) or development (HTTP)
+    const isProduction = window.location.protocol === 'https:';
+    
+    if (isProduction || useProxy) {
+      // Always use proxy in production to avoid Mixed Content errors
+      // Also use proxy if direct URL failed in development
+      return `https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`;
+    } else {
+      // Try direct URL first in development only
+      return imageUrl;
+    }
+  };
+
+  const imageSrc = getImageSrc();
+
+  // Debug logging
+  if (hasValidImage) {
+    const isProduction = window.location.protocol === 'https:';
+    console.log(`🔍 Post ${id} - imageUrl:`, imageUrl);
+    console.log(`🔍 Post ${id} - isProduction:`, isProduction);
+    console.log(`🔍 Post ${id} - useProxy:`, useProxy);
+    console.log(`🔍 Post ${id} - imageSrc:`, imageSrc);
+  }
 
   return (
     <div className="post">
@@ -78,7 +115,8 @@ export default function Post({
             </div>
           )}
           <img 
-            src={imageUrl} 
+            key={`${id}-${useProxy}`} // Force re-render when switching to proxy
+            src={imageSrc} 
             alt="Post" 
             className="post-image"
             onError={handleImageError}
