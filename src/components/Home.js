@@ -94,74 +94,83 @@ const formatTimeAgo = (dateString) => {
 const Home = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchPosts = async () => {
+      console.log('📱 Making ONE API request to fetch posts...');
+      
       try {
-        setLoading(true);
-        setError(null);
-        
-        // Use the API URL from environment variables
         const apiUrl = process.env.REACT_APP_API_URL || 'http://34.230.1.222:8080';
+        const endpoint = `${apiUrl}/posts`;
         
-        // Try direct API call first, fallback to CORS proxy if needed
-        let endpoint = `${apiUrl}/posts`;
-        console.log('🔄 Fetching posts from:', endpoint);
+        console.log('🚀 Fetching from:', endpoint);
         
         let response;
         try {
+          // Try direct API call first
           response = await axios.get(endpoint);
+          console.log('✅ Direct API call successful');
         } catch (corsError) {
-          console.log('⚠️ CORS error detected, trying with proxy...', corsError.message);
+          console.log('⚠️ CORS error, trying proxy...');
           // Fallback to CORS proxy
-          endpoint = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl + '/posts')}`;
-          console.log('🔄 Fetching with CORS proxy from:', endpoint);
-          response = await axios.get(endpoint);
-          // Parse the proxied response
+          const proxyEndpoint = `https://api.allorigins.win/get?url=${encodeURIComponent(endpoint)}`;
+          response = await axios.get(proxyEndpoint);
           response.data = JSON.parse(response.data.contents);
+          console.log('✅ Proxy API call successful');
         }
         
-        console.log('✅ API Response:', response.data);
-        
-        // Handle the actual API response structure
-        const apiPosts = response.data.posts || response.data;
-        
-        // Transform the API response to match our expected format
-        const transformedPosts = apiPosts.map(post => ({
-          id: post.id,
-          username: post.username || "user_" + post.id,
-          userAvatar: post.userAvatar || post.user_avatar || "https://images.unsplash.com/photo-1494790108755-2616c413b265?w=40&h=40&fit=crop&crop=face",
-          imageUrl: post.imageUrl || post.image_url || post.image, // Don't provide fallback here, let Post component handle it
-          caption: post.caption || post.copy || "",
-          likes: post.likes || Math.floor(Math.random() * 1000),
-          timePosted: post.timePosted || formatTimeAgo(post.created_at),
-          isLiked: post.isLiked || false,
-          isBookmarked: post.isBookmarked || false,
-          commentsCount: post.commentsCount || Math.floor(Math.random() * 50)
-        }));
-        
-        console.log('✅ Transformed Posts:', transformedPosts);
-        setPosts(transformedPosts);
-      } catch (err) {
-        console.error('❌ Error fetching posts:', err);
-        console.error('❌ Error details:', {
-          message: err.message,
-          response: err.response?.data,
-          status: err.response?.status,
-          headers: err.response?.headers
-        });
-        
-        setError(`${err.message} ${err.response?.status ? `(${err.response.status})` : ''}`);
-        // Use fallback posts if API fails
-        setPosts(fallbackPosts);
-      } finally {
-        setLoading(false);
+        if (isMounted) {
+          const apiPosts = response.data.posts || [];
+          console.log(`📦 Received ${apiPosts.length} posts from API`);
+          console.log('📦 API Posts:', apiPosts);
+          
+          // Transform API posts to match our component structure
+          const transformedPosts = apiPosts.map(post => ({
+            id: post.id,
+            username: `user_${post.id}`,
+            userAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face",
+            imageUrl: post.image_url, // Use the actual image URL from API
+            caption: post.copy || "No caption",
+            likes: Math.floor(Math.random() * 1000) + 10,
+            timePosted: formatTimeAgo(post.created_at),
+            isLiked: false,
+            isBookmarked: false,
+            commentsCount: Math.floor(Math.random() * 50) + 1
+          }));
+          
+          console.log('📦 Transformed posts:', transformedPosts);
+          
+          // Debug: Show which posts have images
+          transformedPosts.forEach(post => {
+            console.log(`🖼️ Post ${post.id} imageUrl:`, post.imageUrl);
+            console.log(`🖼️ Post ${post.id} has image:`, !!post.imageUrl);
+          });
+          
+          // Use API posts if available, otherwise fallback
+          setPosts(transformedPosts.length > 0 ? transformedPosts : fallbackPosts);
+          setLoading(false);
+          console.log('✅ Posts loaded successfully');
+        }
+      } catch (error) {
+        console.error('❌ API Error:', error);
+        if (isMounted) {
+          // Use fallback posts on error
+          setPosts(fallbackPosts);
+          setLoading(false);
+          console.log('✅ Using fallback posts due to API error');
+        }
       }
     };
 
     fetchPosts();
-  }, []);
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Empty dependency array - only run once
 
   if (loading) {
     return (
@@ -176,16 +185,6 @@ const Home = () => {
       {/* Main Content */}
       <div className="main-content">
         <div className="feed">
-          {error && (
-            <div className="error-message">
-              <p>⚠️ API Error: {error}</p>
-              <p>Showing fallback posts instead.</p>
-              <details className="error-details">
-                <summary>Debug Info</summary>
-                <p>Check browser console for detailed error logs</p>
-              </details>
-            </div>
-          )}
           {posts.map(post => (
             <Post key={post.id} {...post} />
           ))}
@@ -220,18 +219,18 @@ const Home = () => {
         
         <div className="footer-links">
           <div className="footer-row">
-            <a href="#">About</a>
-            <a href="#">Help</a>
-            <a href="#">Press</a>
-            <a href="#">API</a>
-            <a href="#">Jobs</a>
-            <a href="#">Privacy</a>
-            <a href="#">Terms</a>
+            <button className="footer-link">About</button>
+            <button className="footer-link">Help</button>
+            <button className="footer-link">Press</button>
+            <button className="footer-link">API</button>
+            <button className="footer-link">Jobs</button>
+            <button className="footer-link">Privacy</button>
+            <button className="footer-link">Terms</button>
           </div>
           <div className="footer-row">
-            <a href="#">Locations</a>
-            <a href="#">Language</a>
-            <a href="#">Meta Verified</a>
+            <button className="footer-link">Locations</button>
+            <button className="footer-link">Language</button>
+            <button className="footer-link">Meta Verified</button>
           </div>
           <div className="footer-copyright">
             © 2025 INSTAGRAM FROM META
